@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { errorHandler } from "../utils/error.js";
 import { responseHandler } from "../utils/response.js";
+import jwt from "jsonwebtoken";
 
 export const signupController = async (req, res, next) => {
   try {
@@ -32,6 +33,37 @@ export const signupController = async (req, res, next) => {
   }
 };
 
-export const signinController = (req, res) => {};
+export const signinController = async (req, res, next) => {
+  try {
+    const {email, password} = req.body;
+
+    if (!email || !password) errorHandler(400, "All fields are required!");
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) errorHandler(404, `No user exists with ${email}`);
+
+    const isMatch = await bcrypt.compare(password, existingUser.password);
+    if (!isMatch) errorHandler(400, "Password do not match");
+
+    const token = jwt.sign({
+      id: existingUser._id,
+    }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    });
+
+    res.cookie('access_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    responseHandler(res, 200, existingUser, `Signed in successfully!`);
+    
+  } catch (error) {
+    next(err);
+  }
+};
 
 export const signoutController = (req, res) => {};
