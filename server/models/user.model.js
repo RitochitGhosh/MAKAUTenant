@@ -15,6 +15,10 @@ const userSchema = mongoose.Schema({
         type: String,
         required: true,
     },
+    avatar: {
+        type: String,
+        default: "https://freesvg.org/img/abstract-user-flat-4.png"
+    }
 
 }, { timestamps: true });
 

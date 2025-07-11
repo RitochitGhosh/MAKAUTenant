@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import GoogleLogo from "../assets/google-logo.svg";
+
 import { Loader } from "lucide-react";
 import { toast } from "react-hot-toast";
+import OAuth from "../components/OAuth";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -159,14 +160,7 @@ const SignUp = () => {
             </div>
           </div>
 
-          <button
-            type="button"
-            disabled={loading}
-            className="flex items-center justify-center gap-3 bg-white px-4 py-2 border-2 border-black rounded-sm shadow-[3px_3px_0px_0px_black] hover:bg-[#fffbea] transition-all cursor-pointer"
-          >
-            <img src={GoogleLogo} alt="Google" className="w-5 h-5" />
-            <span className="font-semibold text-sm">Continue with Google</span>
-          </button>
+          <OAuth />
 
           <p className="text-xs text-center mt-5">
             Already have an account?{" "}
