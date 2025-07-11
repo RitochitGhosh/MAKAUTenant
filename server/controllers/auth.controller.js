@@ -61,7 +61,7 @@ export const signinController = async (req, res, next) => {
 
     responseHandler(res, 200, existingUser, `Signed in successfully!`);
     
-  } catch (error) {
+  } catch (err) {
     next(err);
   }
 };

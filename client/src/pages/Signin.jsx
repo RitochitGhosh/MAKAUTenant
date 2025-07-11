@@ -1,24 +1,30 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { data, Link, useNavigate } from 'react-router-dom';
 import GoogleLogo from '../assets/google-logo.svg'; // adjust path if needed
 import toast from 'react-hot-toast';
+import { useDispatch, useSelector } from 'react-redux';
+import { signInFailure, signInStart, signInSuccess } from '../redux/user/userSlice';
+
 
 const SignIn = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const { error, loading } = useSelector((state) => state.user);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const handleChange = (e) =>
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setIsTyping(true);
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setIsTyping(false);
+    dispatch(signInStart());
 
     try {
       const res = await fetch("/api/auth/sign-in", {
@@ -32,7 +38,7 @@ const SignIn = () => {
       const data = await res.json();
 
       if (data.status !== "success") {
-        setError(data.message || "Something went wrong");
+        dispatch(signInFailure(data.message || "Something went wrong"))
         toast.error(data.message || "Signup failed!", {
           style: {
             border: "2px solid black",
@@ -45,7 +51,6 @@ const SignIn = () => {
             secondary: "#fffbea",
           },
         });
-        setLoading(false);
         return;
       }
 
@@ -66,12 +71,13 @@ const SignIn = () => {
         email: "",
         password: "",
       });
+      dispatch(signInSuccess(data.data));
       setTimeout(() => navigate("/"), 1000);
 
     } catch (err) {
-      setError(err.message);
+      dispatch(signInFailure(err.message));
     }
-    console.log(formData);
+    console.log(data);
   };
 
   return (
@@ -121,7 +127,7 @@ const SignIn = () => {
               </Link>
             </div>
 
-            {error && (
+            {error && !isTyping && (
             <p className="text-sm text-red-600 font-semibold text-center -mt-2">
               {error}
             </p>
