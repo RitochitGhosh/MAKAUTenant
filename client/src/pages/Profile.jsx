@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { Loader2, LogOut, Trash2, Upload } from "lucide-react";
@@ -13,17 +14,65 @@ const Profile = () => {
     password: "",
     avatar: user?.avatar || "",
   });
-
+  const [file, setFile] = useState(undefined);
   const [loading, setLoading] = useState(false);
+  const [fileUploadError, setFileUploadError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadComplete, setUploadComplete] = useState(false);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setFormData({ ...formData, avatar: url });
+  useEffect(() => {
+    if (file) handleFileUpload(file);
+  }, [file]);
+
+  const handleFileUpload = async (file) => {
+    setFileUploadError("");
+    setUploadProgress(0);
+
+    try {
+      // Prepare cloudinary for image upload
+      const formDataToUpload = new FormData();
+      formDataToUpload.append("file", file);
+      formDataToUpload.append(
+        "upload_preset",
+        import.meta.env.VITE_CLOUDINARY_UNSIGNED_PRESET || "makautenant"
+      );
+
+      // Upload image to Cloudinary
+      const cloudinaryRes = await axios.post(
+        `https://api.cloudinary.com/v1_1/${
+          import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+        }/image/upload`,
+        formDataToUpload,
+        {
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percent);
+          },
+        }
+      );
+
+      // Get image url from cloudinay
+      const imageUrl = cloudinaryRes.data.secure_url;
+      console.log("Image url: ", imageUrl);
+      setFormData((prev) => ({ ...prev, avatar: imageUrl }));
+      setUploadProgress(100);
+      setUploadComplete(true); // ✅ show success
+
+      setTimeout(() => {
+        setUploadComplete(false); // ✅ reset after 3 sec
+      }, 3000);
+
+      setFile(undefined);
+    } catch (error) {
+      console.error("File upload error:", error);
+      setFileUploadError("Failed to upload image. Please try again.");
+      setUploadProgress(0);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -39,9 +88,9 @@ const Profile = () => {
   //   e.preventDefault();
 
   //   try {
-      
+
   //   } catch (error) {
-      
+
   //   }
   // }
 
@@ -68,10 +117,36 @@ const Profile = () => {
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleFileChange}
+                onChange={(e) => setFile(e.target.files[0])}
                 className="hidden"
               />
             </label>
+
+            {/* Progress Bar */}
+            {uploadProgress > 0 && uploadProgress < 100 && (
+              <div className="w-full mt-2 border-2 border-black shadow-[2px_2px_0px_0px_black] h-3 rounded-sm bg-[#fdfdfd]">
+                <div
+                  className="h-full bg-black text-white text-xs flex items-center justify-center transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                >
+                  {uploadProgress}%
+                </div>
+              </div>
+            )}
+
+            {/* Upload Complete Message */}
+            {uploadComplete && (
+              <div className="mt-2 text-sm font-semibold px-3 py-1 bg-[#d9f99d] text-black border-2 border-black rounded-sm shadow-[2px_2px_0px_0px_black]">
+                ✅ Upload Completed!
+              </div>
+            )}
+
+            {/* Upload Error */}
+            {fileUploadError && (
+              <p className="text-red-600 text-sm font-semibold mt-1">
+                {fileUploadError}
+              </p>
+            )}
           </div>
 
           {/* Username */}
