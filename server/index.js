@@ -4,6 +4,7 @@ import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.router.js';
 import { connectToDB } from './utils/dbConnect.js';
 import cookieParser from 'cookie-parser';
+import propertyRouter from './routes/property.router.js';
 
 dotenv.config();
 const port = process.env.PORT || 3000;
@@ -15,6 +16,7 @@ app.use(cookieParser()); // LOOK: I missed '()' and ran into problem...
 
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/property", propertyRouter);
 
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || 500;
