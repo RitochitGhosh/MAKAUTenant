@@ -1,8 +1,12 @@
-import React from 'react';
-import { Search } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Search } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import UserLogo from "../assets/user-logo.svg";
 
 const Header = () => {
+  const { currentUser } = useSelector((state) => state.user);
+
   return (
     <header className="bg-[#f4f4f4] border-b-4 border-black text-black font-sans">
       <div className="max-w-[1480px] mx-auto px-6 py-4 sm:px-10 sm:py-6 flex items-center justify-between">
@@ -27,7 +31,7 @@ const Header = () => {
         {/* Navigation */}
         <ul className="flex items-center gap-3 sm:gap-4 font-semibold text-md sm:text-lg">
           {/* Show on sm and above */}
-          <Link to="/" className="hidden sm:inline">
+          <Link to="/profile" className="hidden sm:inline">
             <li className="hover:underline cursor-pointer">Profile</li>
           </Link>
           <Link to="/about" className="hidden sm:inline">
@@ -35,18 +39,35 @@ const Header = () => {
           </Link>
 
           {/* Sign In - always visible */}
-          <Link to="/sign-in">
-            <li className="px-3 py-1 border-2 border-black rounded-sm shadow-[3px_3px_0px_0px_black] hover:bg-[#f5e9b3]  transition">
-              Sign In
-            </li>
-          </Link>
 
-          {/* Sign Up - only on sm and above */}
-          <Link to="/sign-up" className="hidden sm:inline">
-            <li className="px-3 py-1 bg-black text-white border-2 border-black rounded-sm shadow-[3px_3px_0px_0px_black] hover:bg-[#f5e9b3] hover:text-black transition">
-              Sign Up
-            </li>
-          </Link>
+          {currentUser ? (
+            <div className="flex items-center gap-3">
+              <div className="p-[2px] rounded-full border-4 border-black bg-white">
+                <Link to="/profile">
+                  <img
+                    src={currentUser?.data?.avatar || UserLogo}
+                    alt="User Avatar"
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <Link to="/sign-in">
+                <li className="px-3 py-1 border-2 border-black rounded-sm shadow-[3px_3px_0px_0px_black] hover:bg-[#f5e9b3]  transition">
+                  Sign In
+                </li>
+              </Link>
+
+              {/* Sign Up - only on sm and above */}
+              <Link to="/sign-up" className="hidden sm:inline">
+                <li className="px-3 py-1 bg-black text-white border-2 border-black rounded-sm shadow-[3px_3px_0px_0px_black] hover:bg-[#f5e9b3] hover:text-black transition">
+                  Sign Up
+                </li>
+              </Link>
+            </div>
+          )}
         </ul>
       </div>
       <div className="flex sm:hidden px-6 pb-4">

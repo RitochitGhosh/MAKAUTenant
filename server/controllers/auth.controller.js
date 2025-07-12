@@ -120,4 +120,12 @@ export const googleAuthenticationController = async (req, res, next) => {
     next(error);
   }
 };
-export const signoutController = (req, res) => {};
+
+export const signoutController = (req, res) => {
+  res.clearCookie("access_token", {
+    sameSite: "Strict",
+    secure: process.env.NODE_ENV === "production",
+  });
+  return responseHandler(res, 200, null, "Signed out successfully!");
+};
+
