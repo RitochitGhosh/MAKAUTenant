@@ -1,9 +1,9 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.router.js';
 import { connectToDB } from './utils/dbConnect.js';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 const port = process.env.PORT || 3000;
@@ -11,6 +11,7 @@ connectToDB();
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser()); // LOOK: I missed '()' and ran into problem...
 
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);

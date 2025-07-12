@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Loader2, LogOut, Trash2, Upload } from "lucide-react";
 
+import {
+  updateUserStart,
+  updateUserSuccess,
+  updateUserFailure,
+  signOut,
+} from "../redux/user/userSlice";
+import { useDispatch } from "react-redux";
+import toast from "react-hot-toast";
+import ConfirmDeleteModal from "../components/confirmAccountDelete";
+
 const Profile = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
   const user = currentUser?.data ?? currentUser;
 
@@ -19,9 +31,9 @@ const Profile = () => {
   const [fileUploadError, setFileUploadError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   useEffect(() => {
     if (file) handleFileUpload(file);
@@ -79,20 +91,120 @@ const Profile = () => {
     e.preventDefault();
     setLoading(true);
 
-    // API Call Here...
+    try {
+      dispatch(updateUserStart());
+
+      const res = await fetch(`/api/user/update/${user._id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (data.status !== "success") {
+        dispatch(updateUserFailure(data.message || "Something went wrong"));
+        toast.error(data.message || "Something went wrong!", {
+          style: {
+            border: "2px solid black",
+            boxShadow: "3px 3px 0 black",
+            background: "#fffbea",
+            color: "#000",
+          },
+          iconTheme: {
+            primary: "black",
+            secondary: "#fffbea",
+          },
+        });
+        return;
+      }
+
+      toast.success("Profile updated!", {
+        style: {
+          border: "2px solid black",
+          boxShadow: "3px 3px 0 black",
+          background: "#fffbea",
+          color: "#000",
+        },
+        iconTheme: {
+          primary: "black",
+          secondary: "#fffbea",
+        },
+      });
+
+      dispatch(updateUserSuccess(data.data));
+      setTimeout(() => navigate("/"), 1000);
+    } catch (error) {
+      dispatch(updateUserFailure(error.message));
+    }
 
     setLoading(false);
   };
 
-  // const handleSignOut = async (e) => {
-  //   e.preventDefault();
+  const handleSignOut = async (e) => {
+    e.preventDefault();
 
-  //   try {
+    try {
+      await fetch("/api/auth/sign-out", {
+        method: "POST",
+        credentials: "include",
+      });
 
-  //   } catch (error) {
+      toast.success("Signed out!", {
+        style: {
+          border: "2px solid black",
+          boxShadow: "3px 3px 0 black",
+          background: "#fffbea",
+          color: "#000",
+        },
+        iconTheme: {
+          primary: "black",
+          secondary: "#fffbea",
+        },
+      });
 
-  //   }
-  // }
+      dispatch(signOut());
+      setTimeout(() => navigate("/"), 1000);
+    } catch (error) {
+      console.log("Sign out failed: ", error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const res = await fetch(`/api/auth/delete/${user._id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (data.status !== "success") {
+        return toast.error(data.message || "Failed to delete account.");
+      }
+
+      dispatch(signOut());
+
+      toast.success("Account deleted successfully!", {
+        style: {
+          border: "2px solid black",
+          boxShadow: "3px 3px 0 black",
+          background: "#fffbea",
+          color: "#000",
+        },
+        iconTheme: {
+          primary: "black",
+          secondary: "#fffbea",
+        },
+      });
+
+      setTimeout(() => navigate("/"), 1000);
+    } catch (error) {
+      toast.error("Something went wrong!");
+      console.error(error);
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-104px)] bg-[#fffbea] px-4 py-10 flex justify-center items-center">
@@ -217,7 +329,7 @@ const Profile = () => {
           <div className="flex items-center justify-between text-sm font-semibold text-gray-700">
             <button
               type="button"
-              // onClick={handleDeleteAccount}
+              onClick={() => setShowConfirmModal(true)}
               className="flex items-center gap-1 text-red-600 hover:text-red-800 transition cursor-pointer"
             >
               <Trash2 className="w-3 h-3" />
@@ -226,7 +338,7 @@ const Profile = () => {
 
             <button
               type="button"
-              // onClick={handleSignOut}
+              onClick={handleSignOut}
               className="flex items-center gap-1 text-black hover:text-gray-900 transition cursor-pointer"
             >
               <LogOut className="w-3 h-3" />
@@ -253,6 +365,11 @@ const Profile = () => {
           </Link>
         </form>
       </div>
+      <ConfirmDeleteModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleDeleteAccount}
+      />
     </div>
   );
 };

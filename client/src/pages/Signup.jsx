@@ -25,6 +25,8 @@ const SignUp = () => {
     setLoading(true);
     setError(null);
 
+    console.log('SIGN-UP: Submitting: ', formData);
+
     try {
       const res = await fetch("/api/auth/sign-up", {
         method: "POST",
@@ -34,7 +36,12 @@ const SignUp = () => {
         body: JSON.stringify(formData),
       });
 
+      console.log('SIGN-UP: Got response from backend')
+
       const data = await res.json();
+
+      console.log('SIGN-UP: Awaited data: ', data);
+
 
       if (data.status !== "success") {
         setError(data.message || "Something went wrong");

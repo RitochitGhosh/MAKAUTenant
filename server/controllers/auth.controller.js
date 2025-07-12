@@ -5,6 +5,7 @@ import { responseHandler } from "../utils/response.js";
 import jwt from "jsonwebtoken";
 
 export const signupController = async (req, res, next) => {
+  console.log("SIGN-UP contoller: Got request: ", req.body);
   try {
     const { username, email, password } = req.body;
 
@@ -33,6 +34,7 @@ export const signupController = async (req, res, next) => {
 };
 
 export const signinController = async (req, res, next) => {
+  console.log("SIGN-IN contoller: Got request: ", req.body);
   try {
     const { email, password } = req.body;
 
@@ -63,6 +65,10 @@ export const signinController = async (req, res, next) => {
     });
 
     const { password: pass, ...rest } = existingUser._doc;
+
+    console.log("SIGN-IN controller: Response: ", rest);
+    console.log("SIGN-IN controller: access_token: ", token);
+
     responseHandler(res, 200, rest, `Signed in successfully!`);
   } catch (err) {
     next(err);
@@ -70,6 +76,7 @@ export const signinController = async (req, res, next) => {
 };
 
 export const googleAuthenticationController = async (req, res, next) => {
+  console.log("GOOGLE-AUTH contoller: Got request: ", req.body);
   try {
     const { name, email, photo } = req.body;
     const user = await User.findOne({ email });
@@ -122,6 +129,7 @@ export const googleAuthenticationController = async (req, res, next) => {
 };
 
 export const signoutController = (req, res) => {
+  console.log('SIGN_OUT controller: Got request...')
   res.clearCookie("access_token", {
     sameSite: "Strict",
     secure: process.env.NODE_ENV === "production",
@@ -129,3 +137,19 @@ export const signoutController = (req, res) => {
   return responseHandler(res, 200, null, "Signed out successfully!");
 };
 
+export const deleteUserController = async (req, res, next) => {
+  console.log('DELETE_USER controller: Got request: ', req.params.id);
+  try {
+    const userId = req.params.id;
+    if (req.user.id !== userId) return next(errorHandler(403, "You can only delete your own account!"));
+
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) return next(errorHandler(404, "User not found!"));
+
+    res.clearCookie("access_token");
+    return responseHandler(res, 200, null, "Account deleted successfully!");
+
+  } catch (err) {
+    next(err);
+  }
+}

@@ -45,7 +45,7 @@ const Header = () => {
               <div className="p-[2px] rounded-full border-4 border-black bg-white">
                 <Link to="/profile">
                   <img
-                    src={currentUser?.data?.avatar || UserLogo}
+                    src={currentUser?.avatar || currentUser?.data?.avatar || UserLogo}
                     alt="User Avatar"
                     className="w-12 h-12 rounded-full object-cover"
                   />
