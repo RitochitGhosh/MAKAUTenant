@@ -1,24 +1,26 @@
-import { useEffect, useState } from "react";
 import axios from "axios";
+import { CheckCircle, Loader2, LogOut, Trash2, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, LogOut, Trash2, Upload } from "lucide-react";
 
+import toast from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import ConfirmDeleteModal from "../components/confirmAccountDelete";
 import {
+  signOut,
+  updateUserFailure,
   updateUserStart,
   updateUserSuccess,
-  updateUserFailure,
-  signOut,
 } from "../redux/user/userSlice";
-import { useDispatch } from "react-redux";
-import toast from "react-hot-toast";
-import ConfirmDeleteModal from "../components/confirmAccountDelete";
 
 const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
   const user = currentUser?.data ?? currentUser;
+  
+  
 
   const [formData, setFormData] = useState({
     username: user?.username || "",
@@ -33,7 +35,8 @@ const Profile = () => {
   const [uploadComplete, setUploadComplete] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   useEffect(() => {
     if (file) handleFileUpload(file);
@@ -206,6 +209,43 @@ const Profile = () => {
     }
   };
 
+  const handleVerifyEmail = async () => {
+    try {
+      const res = await fetch("api/auth/verify-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await res.json();
+      if (data.status != "success") {
+        return toast.error(data.message || "Something went wrong!");
+      }
+
+      toast.success("Redirecting to verification link!", {
+        style: {
+          border: "2px solid black",
+          boxShadow: "3px 3px 0 black",
+          background: "#fffbea",
+          color: "#000",
+        },
+        iconTheme: {
+          primary: "black",
+          secondary: "#fffbea",
+        },
+      });
+
+      console.log("Awaited response from server: ", data);
+      setTimeout(() => {
+        navigate(`/verify-email/${user._id}/${data.data.verifyUrl}`); // FIX: Do not auto redirect, let the user do it from email
+      }, 3000);
+    } catch (err) {
+      toast.error("Failed to send verification email", err);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-104px)] bg-[#fffbea] px-4 py-10 flex justify-center items-center">
       <div className="w-full max-w-2xl bg-white border-4 border-black rounded-sm shadow-[5px_5px_0px_0px_black] p-6 space-y-6">
@@ -216,12 +256,15 @@ const Profile = () => {
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           {/* Avatar Upload */}
           <div className="flex flex-col items-center gap-3">
-            <div className="p-[1.5px] rounded-full border-4 border-black bg-white shadow-[3px_3px_0px_0px_black]">
+            <div className="relative p-[1.5px] rounded-full border-4 border-black bg-white shadow-[3px_3px_0px_0px_black]">
               <img
                 src={formData.avatar}
                 alt="Avatar"
                 className="w-24 h-24 rounded-full object-cover"
               />
+              {user?.isVerified && (
+                <CheckCircle className="absolute -top-2 -right-2 w-5 h-5 text-green-500 bg-white rounded-full border-2 border-black" />
+              )}
             </div>
             <label className="flex items-center gap-2 text-sm font-semibold underline cursor-pointer">
               <Upload className="w-4 h-4 cursor-pointer" />
@@ -234,7 +277,16 @@ const Profile = () => {
               />
             </label>
 
-            {/* Progress Bar */}
+            {!user?.isVerified && (
+              <button
+                type="button"
+                onClick={handleVerifyEmail}
+                className="mt-2 text-xs px-3 py-1 border-2 border-black rounded-sm bg-yellow-100 hover:bg-yellow-200 shadow-[2px_2px_0px_0px_black] font-bold"
+              >
+                Verify Email
+              </button>
+            )}
+
             {uploadProgress > 0 && uploadProgress < 100 && (
               <div className="w-full mt-2 border-2 border-black shadow-[2px_2px_0px_0px_black] h-3 rounded-sm bg-[#fdfdfd]">
                 <div
@@ -246,14 +298,12 @@ const Profile = () => {
               </div>
             )}
 
-            {/* Upload Complete Message */}
             {uploadComplete && (
               <div className="mt-2 text-sm font-semibold px-3 py-1 bg-[#d9f99d] text-black border-2 border-black rounded-sm shadow-[2px_2px_0px_0px_black]">
                 ✅ Upload Completed!
               </div>
             )}
 
-            {/* Upload Error */}
             {fileUploadError && (
               <p className="text-red-600 text-sm font-semibold mt-1">
                 {fileUploadError}

@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import Header from "./components/Header";
 import { Toaster } from "react-hot-toast";
 import PrivateRoute from "./components/PrivateRoute";
+import VerifyEmail from "./pages/VerifyEmail";
 
 const App = () => {
   return (
@@ -24,6 +25,7 @@ const App = () => {
         <Route element={<PrivateRoute />}>
           <Route path="/profile" element={<Profile />} />
         </Route>
+        <Route path="/verify-email/:id/:token" element={<VerifyEmail />} />
       </Routes>
     </BrowserRouter>
   );
