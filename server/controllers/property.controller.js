@@ -8,6 +8,7 @@ export const createPropertyController = async (req, res, next) => {
       name,
       description,
       address,
+      city,
       state,
       pincode,
       regularPrice,
@@ -38,6 +39,7 @@ export const createPropertyController = async (req, res, next) => {
       name,
       description,
       address,
+      city,
       state,
       pincode,
       regularPrice,
@@ -58,19 +60,21 @@ export const createPropertyController = async (req, res, next) => {
   }
 };
 
-
 export const getAllPropertiesController = async (req, res, next) => {
   try {
     const {
       minPrice,
       maxPrice,
       location,
+      city,
       bedRooms,
       bathRooms,
       furnished,
       type,
       isAvailable,
       search,
+      page = 1,
+      limit = 9,
     } = req.query;
 
     const filter = {};
@@ -87,6 +91,11 @@ export const getAllPropertiesController = async (req, res, next) => {
       filter.address = { $regex: location.trim(), $options: "i" };
     }
 
+    // City (city substring match)
+    if (city?.trim()) {
+      filter.city = { $regex: city.trim(), $options: "i" };
+    }
+
     // Rooms
     if (!isNaN(bedRooms)) filter.bedRooms = Number(bedRooms);
     if (!isNaN(bathRooms)) filter.bathRooms = Number(bathRooms);
@@ -98,8 +107,12 @@ export const getAllPropertiesController = async (req, res, next) => {
     // Type
     if (type) filter.type = type;
 
-    // Search (name or description)
+    // Pagination setup
+    const skip = (Number(page) - 1) * Number(limit);
+
     let query = Property.find(filter).sort({ createdAt: -1 });
+
+    // Search (name or description)
     if (search?.trim()) {
       query = query.find({
         $and: [
@@ -108,23 +121,41 @@ export const getAllPropertiesController = async (req, res, next) => {
             $or: [
               { name: { $regex: search.trim(), $options: "i" } },
               { description: { $regex: search.trim(), $options: "i" } },
+              { address: { $regex: search.trim(), $options: "i" } },
+              { city: { $regex: search.trim(), $options: "i" } },
             ],
           },
         ],
       });
     }
 
-    const properties = await query;
-    responseHandler(res, 200, properties);
+    // Count total (optional for frontend)
+    const total = await Property.countDocuments(filter);
+
+    // Apply pagination
+    const properties = await query.skip(skip).limit(Number(limit));
+
+    res.status(200).json({
+      status: "success",
+      results: properties.length,
+      total,
+      currentPage: Number(page),
+      totalPages: Math.ceil(total / limit),
+      hasMore: skip + properties.length < total,
+      data: properties,
+    });
   } catch (err) {
     next(err);
   }
 };
 
-
 export const getSinglePropertyController = async (req, res, next) => {
   try {
-    const property = await Property.findById(req.params.id).populate("owner", "username email avatar");
+    const property = await Property.findById(req.params.id).populate(
+      "owner",
+      "username email avatar"
+    );
+
     if (!property) return next(errorHandler(404, "Property not found"));
 
     responseHandler(res, 200, property);
@@ -133,7 +164,22 @@ export const getSinglePropertyController = async (req, res, next) => {
   }
 };
 
-// ✅ Update Property
+export const getPropertiesByOwner = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const properties = await Property.find({ owner: id }).sort({
+      createdAt: -1,
+    });
+
+    if (!properties) errorHandler(404, "No properties!")
+
+    responseHandler(res, 200, properties, "Ok");
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const updatePropertyController = async (req, res, next) => {
   try {
     const property = await Property.findById(req.params.id);
@@ -143,13 +189,12 @@ export const updatePropertyController = async (req, res, next) => {
       return next(errorHandler(403, "Unauthorized to update this property"));
     }
 
-    const updated = await Property.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    );
+    // Update fields manually
+    Object.assign(property, req.body);
 
-    responseHandler(res, 200, updated, "Property updated successfully");
+    await property.save(); // <- triggers schema validators properly
+
+    responseHandler(res, 200, property, "Property updated successfully");
   } catch (err) {
     next(err);
   }

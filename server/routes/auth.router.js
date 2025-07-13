@@ -18,11 +18,10 @@ authRouter.post("/sign-up", signupController);
 authRouter.post("/sign-in", signinController);
 authRouter.post("/sign-out", signoutController);
 authRouter.post("/google", googleAuthenticationController);
-authRouter.delete("/delete/:id", verifyToken, deleteUserController);
+authRouter.delete("/delete/:id", verifyToken, deleteUserController); // api/auth/delete/:id -> delete [id = userId - delete the user finally!]
 authRouter.post("/verify-email", verifyToken, sendVerificationEmail); // TODO: only verified users can add property
 authRouter.get("/verify-email/:id/:token", verifyToken, confirmEmail);
-authRouter.post("/forgot-password", verifyToken, sendResetPasswordEmail);
-authRouter.get("/reset-password/:id/:token", verifyToken, resetPassword);
-// authRouter.post("/reset-password", );
+authRouter.post("/forgot-password", sendResetPasswordEmail);
+authRouter.post("/reset-password/:id/:token", resetPassword);
 
 export default authRouter;

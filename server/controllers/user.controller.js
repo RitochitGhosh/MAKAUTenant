@@ -10,9 +10,9 @@ export const updateUserController = async (req, res, next) => {
   }
 
   try {
-    let { username, email, password, avatar } = req.body;
+    let { username, email, password, city, avatar } = req.body;
 
-    if (!username && !email && !password && !avatar) {
+    if (!username && !email && !password && !avatar && !city) {
       return next(errorHandler(400, "All fields can't be empty!"));
     }
 
@@ -22,13 +22,14 @@ export const updateUserController = async (req, res, next) => {
     const isSameUsername = username === existingUser.username;
     const isSameEmail = email === existingUser.email;
     const isSameAvatar = avatar === existingUser.avatar;
+    const isSameCity = city === existingUser.city;
 
     let isSamePassword = true;
     if (password) {
       isSamePassword = await bcrypt.compare(password, existingUser.password);
     }
 
-    if (isSameUsername && isSameEmail && isSamePassword && isSameAvatar) {
+    if (isSameUsername && isSameEmail && isSamePassword && isSameAvatar && isSameCity) {
       return next(errorHandler(400, "Nothing to change!"));
     }
 
@@ -44,6 +45,7 @@ export const updateUserController = async (req, res, next) => {
         $set: {
           username: username || existingUser.username,
           email: email || existingUser.email,
+          city: city || existingUser.city,
           password,
           avatar: avatar || existingUser.avatar,
         },

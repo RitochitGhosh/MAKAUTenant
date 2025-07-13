@@ -1,35 +1,17 @@
-import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
-import PropertyCard from "../components/PropertyCard";
+import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+import LatestProperties from "../components/LatestProperties";
+import LocalProperties from "../components/LocalProperties";
 
 const Home = () => {
   const { currentUser } = useSelector((state) => state.user);
   const user = currentUser?.data ?? currentUser;
-  const [properties, setProperties] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        const res = await fetch("/api/property");
-        const data = await res.json();
-        if (data.status === "success") {
-          setProperties(data.data);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperties();
-  }, []);
+  
+  motion 
 
   return (
-    <div className="bg-[#fffbea] text-black px-4 pb-20 pt-4">
+    <div className="bg-[#fffbea] text-black px-4 pb-20 pt-4 h-full">
       {/* HERO SECTION */}
       <section className="relative w-full max-w-6xl mx-auto pt-6 pb-20">
         <div className="bg-white border-4 border-black shadow-[6px_6px_0px_#000] rounded-md px-6 py-12 relative">
@@ -115,27 +97,9 @@ const Home = () => {
       </section>
 
       {/* PROPERTY LISTINGS */}
-      <section className="w-full max-w-6xl mx-auto pt-10">
-        <h3 className="text-xl font-bold uppercase mb-6 tracking-wider">
-          Latest Properties
-        </h3>
+      <LatestProperties />
 
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="animate-spin w-6 h-6 text-black" />
-          </div>
-        ) : properties.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {properties.map((property) => (
-              <PropertyCard key={property._id} property={property} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500 font-medium py-10">
-            No properties found. Try adjusting filters or check back later.
-          </p>
-        )}
-      </section>
+      <LocalProperties />
     </div>
   );
 };

@@ -23,6 +23,10 @@ const propertySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    city: {
+      type: String,
+      required: true,
+    },
     state: {
       type: String,
       required: true,

@@ -121,7 +121,7 @@ const SignIn = () => {
             />
             <div className="text-right mt-1">
               <Link
-                to="/forgot-password"
+                to={"/reset-password"}
                 className="text-xs underline font-semibold hover:text-black transition"
               >
                 Forgot password?

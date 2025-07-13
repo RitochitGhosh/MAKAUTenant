@@ -4,6 +4,8 @@ const initialState = {
   currentUser: null,
   error: null,
   loading: false,
+  WishlistCount: 0,
+  wishlist: [],
 };
 
 const userSlice = createSlice({
@@ -43,6 +45,21 @@ const userSlice = createSlice({
     setUser: (state, action) => {
       state.currentUser = action.payload;
     },
+    setWishList: (state, action) => {
+      const exists = state.wishlist.find(
+        (item) => item._id === action.payload._id
+      );
+      if (!exists) {
+        state.wishlist.push(action.payload);
+        state.WishlistCount = state.wishlist.length;
+      }
+    },
+
+    unsetWishList: (state, action) => {
+      const id = action.payload;
+      state.wishlist = state.wishlist.filter((item) => item._id !== id);
+      state.WishlistCount = state.wishlist.length;
+    },
   },
 });
 
@@ -55,6 +72,8 @@ export const {
   updateUserFailure,
   signOut,
   setUser,
+  setWishList,
+  unsetWishList,
 } = userSlice.actions;
 
 export default userSlice.reducer;

@@ -19,13 +19,12 @@ const Profile = () => {
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
   const user = currentUser?.data ?? currentUser;
-  
-  
 
   const [formData, setFormData] = useState({
     username: user?.username || "",
     email: user?.email || "",
     password: "",
+    city: user?.city || "",
     avatar: user?.avatar || "",
   });
   const [file, setFile] = useState(undefined);
@@ -34,6 +33,7 @@ const Profile = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -176,20 +176,41 @@ const Profile = () => {
 
   const handleDeleteAccount = async () => {
     try {
-      const res = await fetch(`/api/auth/delete/${user._id}`, {
+      // Step 1: Get all properties created by user
+      const res1 = await fetch(`/api/property/owner/${user._id}`, {
+        credentials: "include",
+      });
+      const data1 = await res1.json();
+
+      if (data1.status === "success") {
+        const userProperties = data1.data;
+
+        // Step 2: Delete each property (if any)
+        if (Array.isArray(userProperties) && userProperties.length > 0) {
+          for (let prop of userProperties) {
+            await fetch(`/api/property/delete/${prop._id}`, {
+              method: "DELETE",
+              credentials: "include",
+            });
+          }
+        }
+      }
+
+      // Step 3: Delete the user account
+      const res2 = await fetch(`/api/auth/delete/${user._id}`, {
         method: "DELETE",
         credentials: "include",
       });
+      const data2 = await res2.json();
 
-      const data = await res.json();
-
-      if (data.status !== "success") {
-        return toast.error(data.message || "Failed to delete account.");
+      if (data2.status !== "success") {
+        return toast.error(data2.message || "Failed to delete account.");
       }
 
+      // Step 4: Clear state and notify
       dispatch(signOut());
 
-      toast.success("Account deleted successfully!", {
+      toast.success("Account and all properties deleted successfully!", {
         style: {
           border: "2px solid black",
           boxShadow: "3px 3px 0 black",
@@ -250,7 +271,7 @@ const Profile = () => {
     <div className="min-h-[calc(100vh-104px)] bg-[#fffbea] px-4 py-10 flex justify-center items-center">
       <div className="w-full max-w-2xl bg-white border-4 border-black rounded-sm shadow-[5px_5px_0px_0px_black] p-6 space-y-6">
         <h2 className="text-3xl font-extrabold text-black uppercase text-center tracking-tight">
-          My Profile
+          User Information
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -343,6 +364,22 @@ const Profile = () => {
             />
           </div>
 
+          {/* City */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="email" className="font-bold text-sm">
+              City
+            </label>
+            <input
+              type="text"
+              id="city"
+              name="city"
+              className="border-2 border-black px-3 py-2 rounded-sm bg-[#fdfdfd] shadow-[2px_2px_0px_0px_black] focus:outline-none"
+              value={formData.city}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
           {/* Password */}
           <div className="flex flex-col gap-1">
             <label htmlFor="password" className="font-bold text-sm">
@@ -407,12 +444,31 @@ const Profile = () => {
           </div>
 
           {/* Add Property */}
-          <Link
-            to="/add-property"
-            className="block text-center bg-white text-black px-4 py-2 border-2 border-black rounded-sm shadow-[3px_3px_0px_0px_black] hover:bg-black hover:text-white transition-all font-semibold"
+          <div
+            className="relative inline-block"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
           >
-            Add Property
-          </Link>
+            <Link
+              to="/add-property"
+              className={`block text-center px-4 py-2 border-2 rounded-sm shadow-[3px_3px_0px_0px_black] font-semibold transition-all ${
+                user?.isVerified
+                  ? "bg-white text-black border-black hover:bg-[#fffbea]"
+                  : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed pointer-events-none"
+              }`}
+            >
+              Add Property
+            </Link>
+
+            {/* Inline tooltip, absolutely positioned */}
+            {!user?.isVerified && isHovered && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 pointer-events-none">
+                <div className="bg-white border-2 border-black text-black px-4 py-2 text-sm font-bold shadow-[4px_4px_0_0_black] rounded-sm whitespace-nowrap">
+                  Only verified users can add property
+                </div>
+              </div>
+            )}
+          </div>
         </form>
       </div>
       <ConfirmDeleteModal

@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import Property from "../models/property.model.js";
 import bcrypt from "bcryptjs";
 import { errorHandler } from "../utils/error.js";
 import { responseHandler } from "../utils/response.js";
@@ -9,9 +10,9 @@ import crypto from "crypto";
 export const signupController = async (req, res, next) => {
   console.log("SIGN-UP contoller: Got request: ", req.body);
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, city } = req.body;
 
-    if (!username || !email || !password)
+    if (!username || !email || !password )
       errorHandler(400, "All fields are required!"); // 1. Validate input
 
     const existingUser = await User.findOne({ email }); // 2. Check if user already exists
@@ -23,6 +24,7 @@ export const signupController = async (req, res, next) => {
     const newUser = new User({
       username,
       email,
+      city,
       password: hashedPassword,
     });
 
@@ -143,18 +145,22 @@ export const deleteUserController = async (req, res, next) => {
   console.log("DELETE_USER controller: Got request: ", req.params.id);
   try {
     const userId = req.params.id;
-    if (req.user.id !== userId)
-      return next(errorHandler(403, "You can only delete your own account!"));
+
+    if (req.user.id !== userId) return next(errorHandler(403, "You can only delete your own account!"));
 
     const deletedUser = await User.findByIdAndDelete(userId);
     if (!deletedUser) return next(errorHandler(404, "User not found!"));
 
+    await Property.deleteMany({ owner: userId }); // Also need to delete properties registered by the user
+
     res.clearCookie("access_token");
+
     return responseHandler(res, 200, null, "Account deleted successfully!");
   } catch (err) {
     next(err);
   }
 };
+
 
 export const sendVerificationEmail = async (req, res, next) => {
   const { email } = req.body;
@@ -230,6 +236,7 @@ export const confirmEmail = async (req, res, next) => {
 };
 
 export const sendResetPasswordEmail = async (req, res, next) => {
+  console.log('RESET_PASSWORD controller: Got request: ', req.body);
   const { email } = req.body;
 
   try {
@@ -250,23 +257,26 @@ export const sendResetPasswordEmail = async (req, res, next) => {
       html: `<p>Click to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`,
     });
 
-    responseHandler(res, 200, {}, "Password reset email sent.");
+    // Need to set up nodemailer then fix this
+    const resData = {
+      verifyUrl: token,
+      id: user._id,
+    };
+
+    responseHandler(res, 200, resData, "Password reset email sent.");
   } catch (err) {
     next(err);
   }
 };
 
 export const resetPassword = async (req, res, next) => {
+  console.log('NEW_PASSWORD controller: Got request: ', req.body);
   const { id, token } = req.params;
   const { newPassword } = req.body;
 
   try {
     const user = await User.findById(id);
-    if (
-      !user ||
-      user.resetToken !== token ||
-      Date.now() > user.resetTokenExpires
-    ) {
+    if (Date.now() > user.resetTokenExpires) {
       return next(errorHandler(400, "Invalid or expired token"));
     }
 
@@ -275,7 +285,8 @@ export const resetPassword = async (req, res, next) => {
     user.resetTokenExpires = undefined;
     await user.save();
 
-    responseHandler(res, 200, null, "Password updated successfully!");
+    const { password: pass, ...rest } = user._doc;
+    responseHandler(res, 200, rest, "ok!");
   } catch (err) {
     next(err);
   }
