@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://makautenant.onrender.com/',
         secure: false,
       },
     },
@@ -18,3 +18,5 @@ export default defineConfig({
     tailwindcss(),
   ],
 })
+
+// https://makautenant.onrender.com/
