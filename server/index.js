@@ -9,6 +9,7 @@ import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.router.js';
 import propertyRouter from './routes/property.router.js';
 import { connectToDB } from './utils/dbConnect.js';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -18,6 +19,12 @@ const port = process.env.PORT || 3000;
 // Required in ES Modules to simulate __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// cors
+app.use(cors({
+  origin: ['https://makautenant.onrender.com/'], // or "*" if in testing
+  credentials: true
+}));
 
 // DB + Middleware
 connectToDB();
