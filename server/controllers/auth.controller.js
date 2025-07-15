@@ -80,7 +80,7 @@ export const signinController = async (req, res, next) => {
 };
 
 export const googleAuthenticationController = async (req, res, next) => {
-  console.log("GOOGLE-AUTH contoller: Got request: ", req.body);
+  // console.log("GOOGLE-AUTH contoller: Got request: ", req.body);
   try {
     const { name, email, photo } = req.body;
     const user = await User.findOne({ email });
